@@ -2,17 +2,33 @@ import edu.princeton.cs.algs4.StdOut;
 import edu.princeton.cs.algs4.StdRandom;
 import edu.princeton.cs.algs4.StdStats;
 
-class PercolationStats {
-    private final int size;
+public class PercolationStats {
+    private static final double CRITICAL_VALUE = 1.96;
+
     private final int trials;
     private final double[] results;
+
+    private double mean;
+    private double stddev;
 
     public PercolationStats(int n, int trials) {
         if (n < 1 || trials < 1) throw new IllegalArgumentException("size and trials must be greater than 0");
 
         this.trials = trials;
-        size = n;
         results = new double[trials];
+
+        for (int i = 0; i < trials; i++) {
+            Percolation percolation = new Percolation(n);
+
+            while (!percolation.percolates()) {
+                int row = StdRandom.uniform(n) + 1;
+                int col = StdRandom.uniform(n) + 1;
+
+                percolation.open(row, col);
+            }
+
+            results[i] = (double) percolation.numberOfOpenSites() / (n * n);
+        }
     }
 
     public static void main(String[] args) {
@@ -20,7 +36,6 @@ class PercolationStats {
         int trials = Integer.parseInt(args[1]);
 
         PercolationStats stats = new PercolationStats(n, trials);
-        stats.run();
 
         StdOut.print("mean                    = " + stats.mean() + "\n");
         StdOut.print("stddev                  = " + stats.stddev() + "\n");
@@ -28,33 +43,22 @@ class PercolationStats {
     }
 
     public double mean() {
-        return StdStats.mean(results);
+        if (mean > 0) return mean;
+        mean = StdStats.mean(results);
+        return mean;
     }
 
     public double stddev() {
-        return StdStats.stddev(results);
+        if (stddev > 0) return stddev;
+        stddev = StdStats.stddev(results);
+        return stddev;
     }
 
     public double confidenceLo() {
-        return mean() - 1.96 * stddev() / Math.sqrt(trials);
+        return mean() - CRITICAL_VALUE * stddev() / Math.sqrt(trials);
     }
 
     public double confidenceHi() {
-        return mean() + 1.96 * stddev() / Math.sqrt(trials);
-    }
-
-    private void run() {
-        for (int i = 0; i < trials; i++) {
-            Percolation percolation = new Percolation(size);
-
-            while (!percolation.percolates()) {
-                int row = StdRandom.uniform(size) + 1;
-                int col = StdRandom.uniform(size) + 1;
-
-                percolation.open(row, col);
-            }
-
-            results[i] = (double) percolation.numberOfOpenSites() / (size * size);
-        }
+        return mean() + CRITICAL_VALUE * stddev() / Math.sqrt(trials);
     }
 }

@@ -1,81 +1,97 @@
 import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 
-class Percolation {
-    private static int top = 0;
-    private final int size;
+public class Percolation {
+    private static final int TOP = 0;
+
     private final int bottom;
-    private final WeightedQuickUnionUF quickUnionUF;
-    private final boolean[] opened;
+    private final boolean[] open;
+    private final WeightedQuickUnionUF topToBottom;
+    private final WeightedQuickUnionUF topToSites;
+    private final int size;
+
+    private int openCount;
 
     public Percolation(int n) {
-        if (n < 1) throw new IllegalArgumentException("size must be greater than 0");
+        if (n < 1)
+          throw new IllegalArgumentException("size must be greater than 0");
 
+        int totalSites = n * n;
+
+        bottom = totalSites + 1;
+        open = new boolean[totalSites + 1];
+        openCount = 0;
+        topToBottom = new WeightedQuickUnionUF(totalSites + 2);
+        topToSites = new WeightedQuickUnionUF(totalSites + 1);
         size = n;
-        bottom = size * size + 1;
-        quickUnionUF = new WeightedQuickUnionUF(n * n + 2);
-        opened = new boolean[n * n + 2];
     }
 
     public void open(int row, int col) {
-        if (row < 1 || col < 1) throw new IllegalArgumentException("invalid site");
+        if (!valid(row, col))
+          throw new IllegalArgumentException("invalid site");
 
-        int site = ((row - 1) * size) + col;
+        int site = site(row, col);
 
-        // Open the site
-        opened[site] = true;
+        if (!open[site]) {
+          int above = site(row - 1, col);
+          int below = site(row + 1, col);
+          int left = site(row, col - 1);
+          int right = site(row, col + 1);
 
-        // If site is on the top row, union the top hidden site
-        if (row == 1) union(top, site);
+          open[site] = true;
+          openCount++;
 
-        // If site is on the bottom row, union the bottom hidden site
-        if (row == size) union(site, bottom);
+          // If site is on the top row, union the top virtual site
+          if (row == 1) union(TOP, site);
 
-        // Find adjacent sites
-        int above = ((row - 2) * size) + col;
-        int below = (row * size) + col;
-        int left = ((row - 1) * size) + col - 1;
-        int right = ((row - 1) * size) + col + 1;
+          // If site is on the bottom row, union the bottom virtual site
+          if (row == size) topToBottom.union(site, bottom);
 
-        // Union to above if open
-        if (row > 1 && opened[above]) union(site, above);
+          // Union to above if open
+          if (row > 1 && open[above]) union(site, above);
 
-        // Union to below if open
-        if (row != size && opened[below]) union(site, below);
+          // Union to below if open
+          if (row != size && open[below]) union(site, below);
 
-        // Union to left if open
-        if (col > 1 && opened[left]) union(site, left);
+          // Union to left if open
+          if (col > 1 && open[left]) union(site, left);
 
-        // Union to right if open
-        if (col != size && opened[right]) union(site, right);
+          // Union to right if open
+          if (col != size && open[right]) union(site, right);
+        }
     }
 
     public boolean isOpen(int row, int col) {
-        if (row < 1 || col < 1) throw new IllegalArgumentException("invalid site");
+        if (!valid(row, col))
+            throw new IllegalArgumentException("invalid site");
 
-        return opened[(row * size) + col];
+        return open[site(row, col)];
     }
 
     public boolean isFull(int row, int col) {
-        if (row < 1 || col < 1) throw new IllegalArgumentException("invalid site");
+        if (!valid(row, col))
+            throw new IllegalArgumentException("invalid site");
 
-        return quickUnionUF.connected(0, (row * size) + col);
+        return topToSites.connected(TOP, site(row, col));
     }
 
     public int numberOfOpenSites() {
-        int count = 0;
-
-        for (int i = 0; i < opened.length; i++) {
-            if (opened[i]) count++;
-        }
-
-        return count;
+        return openCount;
     }
 
     public boolean percolates() {
-        return quickUnionUF.connected(top, bottom);
+        return topToBottom.connected(TOP, bottom);
+    }
+
+    private int site(int row, int col) {
+        return (row - 1) * size + col;
     }
 
     private void union(int site1, int site2) {
-        quickUnionUF.union(site1, site2);
+        topToBottom.union(site1, site2);
+        topToSites.union(site1, site2);
+    }
+
+    private boolean valid(int row, int col) {
+      return row > 0 && col > 0 && row <= size && col <= size;
     }
 }
