@@ -29,6 +29,9 @@ public class PercolationStats {
 
             results[i] = (double) percolation.numberOfOpenSites() / (n * n);
         }
+
+        mean = StdStats.mean(results);
+        stddev = StdStats.stddev(results);
     }
 
     public static void main(String[] args) {
@@ -43,22 +46,18 @@ public class PercolationStats {
     }
 
     public double mean() {
-        if (mean > 0) return mean;
-        mean = StdStats.mean(results);
         return mean;
     }
 
     public double stddev() {
-        if (stddev > 0) return stddev;
-        stddev = StdStats.stddev(results);
         return stddev;
     }
 
     public double confidenceLo() {
-        return mean() - CRITICAL_VALUE * stddev() / Math.sqrt(trials);
+        return mean - CRITICAL_VALUE * stddev / Math.sqrt(trials);
     }
 
     public double confidenceHi() {
-        return mean() + CRITICAL_VALUE * stddev() / Math.sqrt(trials);
+        return mean + CRITICAL_VALUE * stddev / Math.sqrt(trials);
     }
 }
